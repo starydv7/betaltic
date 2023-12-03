@@ -46,17 +46,24 @@ const Home = () => {
   }, [favorites]);
 
   const handleAddToFavorites = () => {
-    if (selectedPackage) {
-      const newFavorite = { package: selectedPackage, reason: favoriteReason };
-      setFavorites([...favorites, newFavorite]);
-      setSelectedPackage(null);
-      setFavoriteReason('');
+    if (selectedPackage && favoriteReason) {
+      // Check if the selected package is not already in favorites
+      if (!favorites.some((fav) => fav.package === selectedPackage)) {
+        const newFavorite = { package: selectedPackage, reason: favoriteReason };
+        setFavorites([...favorites, newFavorite]);
+        setSelectedPackage(null);
+        setFavoriteReason('');
+      } else {
+        alert('You have already added this package to favorites.');
+      }
+    } else {
+      alert('Please select a package and provide a reason.');
     }
   };
 
-  // const handleEdit = (favorite) => {
-  //   navigate(`/edit/${favorite.package}`, { state: { favorite } });
-  // };
+  const handleEdit = (favorite) => {
+    navigate(`/edit/${favorite.package}`, { state: { favorite } });
+  };
 
   const handleUpdate = (favorite) => {
     const updatedReason = prompt('Enter the updated reason:', favorite.reason);
@@ -78,7 +85,7 @@ const Home = () => {
 
   return (
     <div className="container mx-auto mt-8 p-4 bg-gray-100 rounded shadow-md">
-      <h2 className="text-2xl font-semibold mb-4">NPM favorite package </h2>
+      <h2 className="text-2xl font-semibold mb-4">NPM Favorite Package </h2>
       <div className="flex items-center mb-4">
         <input
           type="text"
@@ -132,7 +139,7 @@ const Home = () => {
       {/* Favorites Section */}
       <FavoriteList
         favorites={favorites}
-        // onEdit={handleEdit}
+        onEdit={handleEdit}
         onDelete={handleDelete}
         onUpdate={handleUpdate}
       />
