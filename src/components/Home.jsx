@@ -1,30 +1,62 @@
 // src/components/SearchPage.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import FavoriteList from './FavoriteList'; // Import the FavoriteList component
+import FavoriteList from './FavoriteList';
 
 const Home = () => {
   const navigate = useNavigate();
   const [packageName, setPackageName] = useState('');
-  const [packageList, setPackageList] = useState(['react', 'react-dom', 'react-router-dom']);
+  const [packageList, setPackageList] = useState([
+    'react',
+    'react-dom',
+    'react-router-dom',
+    'redux',
+    'react-redux',
+    'axios',
+    'styled-components',
+    'prop-types',
+    'formik',
+    'yup',
+    'react-helmet-async',
+    'react-query',
+    'react-spring',
+    'react-icons',
+    '@testing-library/react',
+    '@testing-library/jest-dom',
+    '@mui/material',
+    '@emotion/react',
+    '@emotion/styled',
+    'antd'
+  ]);
+
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [favoriteReason, setFavoriteReason] = useState('');
   const [favorites, setFavorites] = useState([]);
+  const [showAllPackages, setShowAllPackages] = useState(false);
+
+  // Load favorites from local storage on component mount
+  useEffect(() => {
+    const storedFavorites = JSON.parse(localStorage.getItem('favorites')) || [];
+    setFavorites(storedFavorites);
+  }, []);
+
+  // Save favorites to local storage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+  }, [favorites]);
 
   const handleAddToFavorites = () => {
     if (selectedPackage) {
-      setFavorites([...favorites, { package: selectedPackage, reason: favoriteReason }]);
+      const newFavorite = { package: selectedPackage, reason: favoriteReason };
+      setFavorites([...favorites, newFavorite]);
       setSelectedPackage(null);
       setFavoriteReason('');
-      // Redirect to the Favorites page after successful addition
-      // navigate('/favorite');
     }
   };
 
-  const handleEdit = (favorite) => {
-    // Redirect to edit page with the selected favorite
-    navigate(`/edit/${favorite.package}`, { state: { favorite } });
-  };
+  // const handleEdit = (favorite) => {
+  //   navigate(`/edit/${favorite.package}`, { state: { favorite } });
+  // };
 
   const handleUpdate = (favorite) => {
     const updatedReason = prompt('Enter the updated reason:', favorite.reason);
@@ -48,7 +80,6 @@ const Home = () => {
     <div className="container mx-auto mt-8 p-4 bg-gray-100 rounded shadow-md">
       <h2 className="text-2xl font-semibold mb-4">NPM favorite package </h2>
       <div className="flex items-center mb-4">
-        {/* Input for searching packages */}
         <input
           type="text"
           value={packageName}
@@ -56,7 +87,6 @@ const Home = () => {
           placeholder="Enter package name"
           className="p-2 border border-gray-300 rounded mr-2 focus:outline-none focus:border-blue-500"
         />
-        {/* Button to add package to favorites */}
         <button
           onClick={handleAddToFavorites}
           className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 focus:outline-none"
@@ -64,14 +94,13 @@ const Home = () => {
           Add to Favorites
         </button>
       </div>
-      {/* List of packages */}
       <ul className="list-disc pl-6 mb-4">
         {packageList
           .filter((pkg) => pkg.toLowerCase().includes(packageName.toLowerCase()))
+          .slice(0, showAllPackages ? packageList.length : 5)
           .map((pkg) => (
             <li key={pkg} className="mb-2">
               <label className="flex items-center">
-                {/* Radio button for selecting a package */}
                 <input
                   type="radio"
                   name="selectedPackage"
@@ -85,7 +114,14 @@ const Home = () => {
             </li>
           ))}
       </ul>
-      {/* Textarea for entering the reason for adding to favorites */}
+      {packageList.length > 5 && (
+        <button
+          onClick={() => setShowAllPackages(!showAllPackages)}
+          className="text-blue-500 mb-4 cursor-pointer"
+        >
+          {showAllPackages ? 'Show Less' : 'Show More'}
+        </button>
+      )}
       <textarea
         placeholder="Why is this package your favorite?"
         value={favoriteReason}
@@ -96,7 +132,7 @@ const Home = () => {
       {/* Favorites Section */}
       <FavoriteList
         favorites={favorites}
-        onEdit={handleEdit}
+        // onEdit={handleEdit}
         onDelete={handleDelete}
         onUpdate={handleUpdate}
       />
