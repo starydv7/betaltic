@@ -2,33 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FavoriteList from './FavoriteList';
+import axios from 'axios';
 
 const Home = () => {
   const navigate = useNavigate();
   const [packageName, setPackageName] = useState('');
-  const [packageList, setPackageList] = useState([
-    'react',
-    'react-dom',
-    'react-router-dom',
-    'redux',
-    'react-redux',
-    'axios',
-    'styled-components',
-    'prop-types',
-    'formik',
-    'yup',
-    'react-helmet-async',
-    'react-query',
-    'react-spring',
-    'react-icons',
-    '@testing-library/react',
-    '@testing-library/jest-dom',
-    '@mui/material',
-    '@emotion/react',
-    '@emotion/styled',
-    'antd'
-  ]);
-
+  const [packageList, setPackageList] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [favoriteReason, setFavoriteReason] = useState('');
   const [favorites, setFavorites] = useState([]);
@@ -45,14 +25,57 @@ const Home = () => {
     localStorage.setItem('favorites', JSON.stringify(favorites));
   }, [favorites]);
 
+  const handleSearchPackages = async () => {
+    try {
+      const response = await axios.get(`https://registry.npmjs.org/-/v1/search?text=${packageName}`);
+      const searchData = response.data.objects;
+
+      // Extract the package names from the search results
+      const searchResults = searchData.map((result) => result.package.name);
+
+      // Update the package list with the search results
+      setPackageList(searchResults);
+
+      // Clear suggestions when search results are available
+      setSuggestions([]);
+    } catch (error) {
+      console.error('Error searching for packages:', error);
+    }
+  };
+
+  const handleInputChange = async (input) => {
+    setPackageName(input);
+
+    if (input.trim() === '') {
+      // Clear suggestions when the input is empty
+      setSuggestions([]);
+      return;
+    }
+
+    try {
+      const response = await axios.get(`https://registry.npmjs.org/-/v1/search/suggestions?size=5&q=${input}`);
+      const suggestionData = response.data;
+
+      // Extract package name suggestions from the response
+      const suggestions = suggestionData.map((suggestion) => suggestion.name);
+      setSuggestions(suggestions);
+    } catch (error) {
+      console.error('Error fetching package suggestions:', error);
+    }
+  };
+
   const handleAddToFavorites = () => {
     if (selectedPackage && favoriteReason) {
       // Check if the selected package is not already in favorites
       if (!favorites.some((fav) => fav.package === selectedPackage)) {
+        // Add package to favorites
         const newFavorite = { package: selectedPackage, reason: favoriteReason };
         setFavorites([...favorites, newFavorite]);
         setSelectedPackage(null);
         setFavoriteReason('');
+
+        // Provide feedback to the user
+        alert('Package added to favorites!');
       } else {
         alert('You have already added this package to favorites.');
       }
@@ -90,17 +113,48 @@ const Home = () => {
         <input
           type="text"
           value={packageName}
-          onChange={(e) => setPackageName(e.target.value)}
+          onChange={(e) => handleInputChange(e.target.value)}
           placeholder="Enter package name"
           className="p-2 border border-gray-300 rounded mr-2 focus:outline-none focus:border-blue-500"
         />
         <button
-          onClick={handleAddToFavorites}
+          onClick={handleSearchPackages}
           className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 focus:outline-none"
         >
-          Add to Favorites
+          Search Packages
         </button>
       </div>
+
+      {/* Suggestions Section */}
+      {suggestions.length > 0 && (
+        <ul className="list-disc pl-6 mb-4">
+          {suggestions.map((suggestion) => (
+            <li key={suggestion} className="mb-2">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="selectedPackage"
+                  value={suggestion}
+                  checked={selectedPackage === suggestion}
+                  onChange={() => setSelectedPackage(suggestion)}
+                  className="mr-2"
+                />
+                {suggestion}
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Add to Favorites Button */}
+      <button
+        onClick={handleAddToFavorites}
+        className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 focus:outline-none"
+      >
+        Add to Favorites
+      </button>
+
+      {/* Package List Section */}
       <ul className="list-disc pl-6 mb-4">
         {packageList
           .filter((pkg) => pkg.toLowerCase().includes(packageName.toLowerCase()))
@@ -121,6 +175,7 @@ const Home = () => {
             </li>
           ))}
       </ul>
+
       {packageList.length > 5 && (
         <button
           onClick={() => setShowAllPackages(!showAllPackages)}
@@ -129,6 +184,8 @@ const Home = () => {
           {showAllPackages ? 'Show Less' : 'Show More'}
         </button>
       )}
+
+      {/* Reason Textarea */}
       <textarea
         placeholder="Why is this package your favorite?"
         value={favoriteReason}
